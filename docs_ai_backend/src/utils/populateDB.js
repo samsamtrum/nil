@@ -7,6 +7,7 @@ import { createClient } from "@libsql/client";
 import { LibSQLVectorStore } from "@langchain/community/vectorstores/libsql";
 import { SitemapLoader } from "@langchain/community/document_loaders/web/sitemap";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 
 const openAIEmbeddings = new OpenAIEmbeddings({
@@ -27,11 +28,14 @@ const openAIEmbeddings = new OpenAIEmbeddings({
 }
 );
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const smartContractsPath = path.resolve(__dirname, "../../../smart-contracts/contracts");
+
 const loadUrl = async (url) => {
   const loader = new CheerioWebBaseLoader(url);
   const docs = await loader.load();
   return docs;
-}
+};
 
 export const populateDB = async () => {
   const db = createClient({
@@ -68,9 +72,8 @@ export const populateDB = async () => {
     const doc = await loadUrl(element.loc);
     docs = docs.concat(doc);
   }
-  const contractsLoader = new DirectoryLoader(
-    path.resolve("../../../node_modules/@nilfoundation/smart-contracts/contracts"), {
-    ".sol": (path) => new TextLoader(path)
+  const contractsLoader = new DirectoryLoader(smartContractsPath, {
+    ".sol": (path) => new TextLoader(path),
   });
   const contractDocs = await contractsLoader.load();
   const textSplitter = new RecursiveCharacterTextSplitter({
@@ -84,4 +87,4 @@ export const populateDB = async () => {
 
   await vectorStore.addDocuments(splits);
   console.log("Documents added");
-}
+};
